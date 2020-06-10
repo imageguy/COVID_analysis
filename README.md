@@ -11,19 +11,20 @@ To use the code, you need a machine that has python3. All the modules identify /
 
 By default, programs produce multipage PDF files. If PNG is selected as the output type (-o png), one file will be produced for each page.
 
-US has 56 states and territories and at this moment 55 (all except American Samoa) have reported covid cases. File states.json has name, id and population for each. You should not have to regenerate it, but if you do, get_states.py will download the list of states from the COVID project. This list will be missing population numbers for some territories, edit the file and put them in by hand. Most current numbers are 2019, but some of the manually entered numbers are 2019.
+US has 56 states and territories and at this moment 55 (all except American Samoa) have reported covid cases. File states.json has name, id and population for each. You should not have to regenerate it, but if you do, get_states.py will download the list of states from the COVID project. This list will be missing population numbers for some territories, edit the file and put them in by hand. Most current numbers are 2019, but some of the manually entered numbers are 2018.
 
-Start by running get_curr_json.py, which will get the current cumulative data file from The COVID project. Processing ignores any today's data in the file, since it's likely to be partial. This will produce latest.json file.
+Start by running get_curr_json.py, which will get the current cumulative
+data file from The COVID Tracking Project. Processing ignores any today's data in the file, since it's likely to be partial. This will produce latest.json file.
 
 Both .json files have one line per record. Parser relies on this, so don't change it.
 
 To make numbers comparable across states, everything is reported in cases per million inhabitants.
 
-The following programs are available. Both support -h to see usage
+The following programs are available. All support -h to see usage:
 
 mksummary.py - makes summary tables with latest per state data, sorted worst-to-best. It provides total number of cases, new number of daily cases, the rate of change of the new number of daily cases and the acceleration of that rate.
 
-analyze_pos.py - makes two charts for each state. One plots the raw and smoothed number of total reported cases. The other reports the rate of change and the acceleration. In PDF, they are put in positive.pdf and pos_d1d2.pdf (I use d1, d2 and d3 since these are first, second and third derivatives of the number of cases).
+analyze_pos.py - makes two plots for each state. One plots the raw and smoothed number of total reported cases. The other reports the rate of change and the acceleration. In PDF, they are put in positive.pdf and pos_d1d2.pdf (I use d1, d2 and d3 since these are first, second and third derivatives of the number of cases). Finally, a plot of d3 for all states over the last 15 days is produced to give a sense of current trends. Lines sloping up on the right are indication the infection is intensifying in these states.
 
 All the other modules are called by these two programs.
 
