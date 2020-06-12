@@ -29,10 +29,12 @@ parser.add_argument('-o', \
 		nargs='?', \
 		help='output type, pdf or png, default is pdf')
 parser.add_argument('-a', \
-		default='pos,d1d2,d3', \
+		default='cmb,d3', \
 		const='', \
 		nargs='?', \
-		help='list of analyses to run, default is pos,d1d2,d3')
+		help='list of analyses to run, default is cmb,d3,\
+ use pos,d1d2 instead of cmb to get them on separate pages' \
+ 		)
 parser.add_argument('-r', \
 		type=int, \
 		default=-1, \
@@ -49,8 +51,8 @@ plot_days = -1
 plot_positives = False
 plot_derivatives = False
 plot_d2_analysis = False
-if args.a.find('pos') > -1:
-	plot_positives = True
+if args.a.find('cmb') > -1:
+	plot_combined = True
 if args.a.find('d1d2') > -1:
 	plot_derivatives = True
 if args.a.find('d3') > -1:
@@ -78,6 +80,18 @@ states = parse_latest()
 # generate the numbers
 summary = process.analyze(states)
 
+
+# plot combined positives and derivatives
+if plot_combined:
+	if verbose:
+		print( 'generating combined plot')
+	with PdfPages('pos_combined.pdf') as pdf:
+		for state in states:
+			if args.o == 'pdf':
+				outspec = pdf
+			else:
+				outspec = 'png/' + state['state'] + '_pos.png'
+			plot_modules.plot_combined(state,n_days,outspec)
 
 # plot positives
 if plot_positives:
@@ -120,38 +134,9 @@ if plot_d2_analysis:
 		ax.set_xlabel( 'last 15 days' )
 		ax.set_ylabel( 'second derivative of cases per million' )
 				
-		for state in states:
-			if state['have_covid'] :
-				n_samples = state['n_samples']
-				d2 = state['pos_d2']
-				if d2[n_samples-1] > d2_max :
-					d2_max = d2[n_samples-1]
-					d2_max_state = state['name']
-				if d2[n_samples-1] < d2_min :
-					d2_min = d2[n_samples-1]
-					d2_min_state = state['name']
-				if d2[n_samples-1] > 0:
-					n_d2_pos += 1
-				else:
-					n_d2_neg +=1
-				delta = d2[n_samples-1] > d2[n_samples-3]
-				if delta :
-					n_d2_inc += 1
-				else:
-					n_d2_dec +=1
-				line, = ax.plot( range(15),\
-				d2[(n_samples-15):], \
-						label=state['name'])
 		plt.title('Second derivatives of positive cases per million')
 		if args.o == 'pdf':
 			pdf.savefig()
 		else:
 			plt.savefig('png/d2_summary.png', format='png')
 		plt.close()
-
-		print( 'd2 min = ',"{:,.2f}".format(d2_min),' in ',d2_min_state)
-		print( 'd2 max = ',"{:,.2f}".format(d2_max),' in ',d2_max_state)
-		print( n_d2_pos, ' states with increasing rate' )
-		print( n_d2_neg, ' states with decreasing rate' )
-		print( n_d2_inc, ' states with accelerating rate' )
-		print( n_d2_dec, ' states with deccelerating rate' )

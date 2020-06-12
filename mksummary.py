@@ -52,10 +52,13 @@ summary = process.analyze(states)
 
 # positives
 with PdfPages('summary.pdf') as pdf:
+
+
 	if args.o == 'pdf':
 		outspec = pdf
 	else:
 		outspec = 'png/summ_pos.png'
+	plot_modules.plot_tested(states[0], -1, outspec )
 	plot_modules.output_table(summary['positives'],\
 		'Cumulative number of cases per million, most to least',\
 		'Raw (unsmoothed) data', \
@@ -94,6 +97,51 @@ with PdfPages('summary.pdf') as pdf:
 		'Acceleration of change rate of new cases per million, most to least',\
 		'From smoothed data', \
 		'State', 'change rate acceleration', outspec)
+
+
+# state risk analysis
+n_d2_pos = 0
+n_d2_neg = 0
+n_d2_inc = 0
+n_d2_dec = 0
+d2_max = 0 
+d2_max_state = ''
+d2_min = 0 
+d2_min_state = ''
+
+
+
+for state in states:
+	n_samples = state['n_samples']
+	d1 = state['pos_d1'][n_samples-1]
+	d2 = state['pos_d2'][n_samples-1]
+	if d2 > d2_max :
+		d2_max = d2
+		d2_max_state = state['name']
+	if d2 < d2_min :
+		d2_min = d2
+		d2_min_state = state['name']
+	if d2 > 0:
+		n_d2_pos += 1
+	else:
+		n_d2_neg +=1
+	delta = d2 > state['pos_d2'][n_samples-3]
+	if delta :
+		n_d2_inc += 1
+	else:
+		n_d2_dec +=1
+	if d2 > 1.0:
+		print(state['name'], \
+		'	:	d1='+"{:,.2f}".format(d1),\
+		'	:	d2='+"{:,.2f}".format(d2) )
+		
+
+print( 'd2 min = ',"{:,.2f}".format(d2_min),' in ',d2_min_state)
+print( 'd2 max = ',"{:,.2f}".format(d2_max),' in ',d2_max_state)
+print( n_d2_pos, ' states with increasing rate' )
+print( n_d2_neg, ' states with decreasing rate' )
+print( n_d2_inc, ' states with accelerating rate' )
+print( n_d2_dec, ' states with deccelerating rate' )
 
 
 sys.exit(0)

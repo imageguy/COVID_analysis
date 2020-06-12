@@ -22,7 +22,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from parse_data import parse_latest
 
 # smoothing parameters - number of days
-support = 7	# positives
+support = 7	# positives and tests
 support_d1 = 3	# d1 - number of new cases
 support_d2 = 3	# d2 - rate of change in new cases
 support_d3 = 3	# d3 - acceleration of the rate of change in new cases
@@ -97,9 +97,58 @@ def state_positives(state):
 			wrk[i] = (d2[i]-d2[i-1])/(days[i]-days[i-1])
 		smooth_series( d3, support_d3, wrk, days, n_samples)
 
+# must be called *after* state positives
+def state_tested(state):
+	n_samples = state['n_samples']
+	if n_samples == 0:
+		return
+	datalen = len(state['data'])
+
+	days = state['days']
+	state['negatives'] = [0]*n_samples
+	state['tested'] = [0]*n_samples
+	vals = state['negatives']
+	tested = state['tested']
+	positives = state['positives']
+	negatives = state['negatives']
+	for day in range(0,n_samples):
+		negatives[day] = ((state['data'])[n_samples-day-1])['negative']
+		if negatives[day] == None :
+			negatives[day] = negatives[day-1]
+		else:
+			negatives[day] /=(state['pop']/1000000)
+		tested[day] = positives[day] + negatives[day]
+#	if state['name'] == 'Georgia' :
+#		print( 'negatives' )
+#		print( negatives )
+#		print( 'positives' )
+#		print( positives )
+#		print( 'tested' )
+#		print( tested )
+	for day in range(n_samples-1,1,-1):
+		tested[day] -= tested[day-1]
+	# smooth tested
+	state['smoothed_tested'] = [0]*(n_samples)
+	smoothed = state['smoothed_tested']
+	smooth_series( smoothed, support, tested, days, n_samples)
+	# fraction positive
+	state['frac_positive'] = [0]*n_samples
+	frac = state['frac_positive']
+	for day in range(1,n_samples):
+		if tested[day] > 0:
+			frac[day] = (positives[day] - positives[day-1])/\
+				tested[day]
+		else:
+			frac[day] = 0
+	# smooth frac
+	state['smoothed_frac'] = [0]*(n_samples)
+	smoothed = state['smoothed_frac']
+	smooth_series( smoothed, support, frac, days, n_samples)
+
 def analyze(states) :
 	for state in states:
 		state_positives(state)
+		state_tested(state)
 	# remove any states with no cases
 	n_states = len(states)
 	ctr = 0
@@ -107,12 +156,10 @@ def analyze(states) :
 		state = states[ctr]
 		if not state['have_covid'] :
 			n_states -= 1
-			print( 'removing ' + state['name'])
+			#print( 'removing ' + state['name'])
 			states.pop(ctr)
 		else:
 			ctr +=1
-	for state in states:
-		state_positives(state)
 	# build various global arrays and values
 	summary = dict()
 	summary['active_states'] = n_states
