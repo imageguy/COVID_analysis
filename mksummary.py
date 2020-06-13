@@ -19,6 +19,149 @@ from matplotlib.backends.backend_pdf import PdfPages
 from parse_data import parse_latest
 import process
 import plot_modules
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib import enums
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+from reportlab.platypus import Table, TableStyle, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+
+# sorting functions for state trend table
+# though output mostly as ints, values are floats, so no need to worry 
+# about ties
+def sort_pos(state):
+	return state['positives'][state['n_samples']-1]
+
+def sort_d1(state):
+	return state['pos_d1'][state['n_samples']-1]
+
+def sort_d2(state):
+	return state['pos_d2'][state['n_samples']-1]
+
+def sort_dpos(state):
+	return state['days_to_double']['pos']
+
+def sort_dd1(state):
+	val = state['days_to_double']['d1']
+	if val == -1:
+		return 99
+	else:
+		return val
+
+def sort_dmodel(state):
+	val = state['days_to_double']['model']
+	if val == -1:
+		return 99
+	else:
+		return val
+
+def single_trend_table( sorted, styles, elements, title, footnote ) :
+	ptext = '<strong>%s</strong>' % title
+	pp = Paragraph(title, styles['Title'])
+	elements.append(pp)
+	elements.append(Spacer(1, 10))
+	data = [
+		[' ', 'State', \
+		'positives\nper million', \
+		'daily new\nper million',
+		'daily new\nrate of change',\
+		'days to double\npos (linear)',\
+		'days to double\n new',\
+		'days to double\npos (model)'],
+	]
+	ctr = 1
+	for state in sorted:
+		n_samples = state['n_samples']
+		pos = state['positives'][n_samples-1]
+		d1 = state['pos_d1'][n_samples-1]
+		d2 = state['pos_d2'][n_samples-1]
+		double_d = state['days_to_double']
+		dd1 = int(double_d['d1'])
+		if dd1 == -1:
+			dd1str = 'N/A'
+		else:
+			dd1str = str(dd1)
+		dmd = int(double_d['model'])
+		if dmd == -1:
+			dmdstr = 'N/A'
+		else:
+			dmdstr = str(dmd)
+			
+		tabline = [ str(ctr), \
+			state['name'], \
+			str(int(pos)), \
+			"{:,.2f}".format(d1),\
+			"{:,.2f}".format(d2), \
+			str(int(double_d['pos'])), \
+			dd1str, \
+			dmdstr \
+		]
+		ctr += 1
+		data.append(tabline)
+	t=Table(data)
+	t.setStyle(TableStyle([('ALIGN',(1,1),(-2,-2),'RIGHT'),
+	('TEXTCOLOR',(1,1),(-1,-1),colors.red),
+	('VALIGN',(0,0),(0,-1),'TOP'),
+	('TEXTCOLOR',(0,0),(1,-1),colors.blue),
+	('ALIGN',(0,0),(-1,-1),'CENTER'),
+	('VALIGN',(0,-1),(-1,-1),'MIDDLE'),
+	('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
+	('BOX', (0,0), (-1,-1), 0.25, colors.black),
+	]))
+	elements.append(t)
+	if not footnote == '':
+		elements.append(Spacer(1, 10))
+		elements.append(Paragraph(footnote,styles['Normal']))
+		
+	elements.append(PageBreak())
+
+def make_trend_report(states, fname ):
+
+	sorted = list()  # used to sort on different criteria
+	for state in states:
+		sorted.append(state)
+
+	mysize = (612,1200)
+
+	doc = SimpleDocTemplate(fname, pagesize=mysize)
+	doc.title = 'State trends report'
+	doc.topMargin = 36
+
+	elements = []
+
+	styles=getSampleStyleSheet()
+	NAnote = 'N/A - will never double under current trends'
+
+	sorted.sort(key=sort_pos,reverse=True)
+	single_trend_table( sorted, styles, elements, \
+			'State trends by total positives', NAnote)
+
+	sorted.sort(key=sort_d1,reverse=True)
+	single_trend_table( sorted, styles, elements, \
+			'State trends by new cases', NAnote)
+
+	sorted.sort(key=sort_d2,reverse=True)
+	single_trend_table( sorted, styles, elements, \
+			'State trends by by new case growth', NAnote)
+
+	sorted.sort(key=sort_dd1)
+	single_trend_table( sorted, styles, elements, \
+			'State trends by days to double new cases', NAnote)
+
+	sorted.sort(key=sort_dpos)
+	single_trend_table( sorted, styles, elements, \
+		'State trends by days to double total positives (linear)', \
+		NAnote)
+
+	sorted.sort(key=sort_dmodel)
+	single_trend_table( sorted, styles, elements, \
+			'State trends by days to double positives (model)',\
+			NAnote)
+
+	# write the document to disk
+	doc.build(elements)
 
 
 parser = argparse.ArgumentParser(description='analysis of number of cases')
@@ -58,7 +201,6 @@ with PdfPages('summary.pdf') as pdf:
 		outspec = pdf
 	else:
 		outspec = 'png/summ_pos.png'
-	plot_modules.plot_tested(states[0], -1, outspec )
 	plot_modules.output_table(summary['positives'],\
 		'Cumulative number of cases per million, most to least',\
 		'Raw (unsmoothed) data', \
@@ -98,8 +240,10 @@ with PdfPages('summary.pdf') as pdf:
 		'From smoothed data', \
 		'State', 'change rate acceleration', outspec)
 
+# trend table for all states, sorted on each column
+make_trend_report( states, 'trends.pdf' )
 
-# state risk analysis
+# state trend analysis
 n_d2_pos = 0
 n_d2_neg = 0
 n_d2_inc = 0
@@ -109,12 +253,12 @@ d2_max_state = ''
 d2_min = 0 
 d2_min_state = ''
 
-
-
 for state in states:
 	n_samples = state['n_samples']
+	pos = state['positives'][n_samples-1]
 	d1 = state['pos_d1'][n_samples-1]
 	d2 = state['pos_d2'][n_samples-1]
+	double_d = state['days_to_double']
 	if d2 > d2_max :
 		d2_max = d2
 		d2_max_state = state['name']
@@ -130,11 +274,6 @@ for state in states:
 		n_d2_inc += 1
 	else:
 		n_d2_dec +=1
-	if d2 > 1.0:
-		print(state['name'], \
-		'	:	d1='+"{:,.2f}".format(d1),\
-		'	:	d2='+"{:,.2f}".format(d2) )
-		
 
 print( 'd2 min = ',"{:,.2f}".format(d2_min),' in ',d2_min_state)
 print( 'd2 max = ',"{:,.2f}".format(d2_max),' in ',d2_max_state)

@@ -15,6 +15,7 @@
 import json
 import sys
 import datetime
+import math
 import matplotlib
 import matplotlib.pyplot as plt
 import operator
@@ -145,10 +146,34 @@ def state_tested(state):
 	smoothed = state['smoothed_frac']
 	smooth_series( smoothed, support, frac, days, n_samples)
 
+# compute trend data
+def trends(state):
+	n_samples = state['n_samples']
+	if n_samples == 0:
+		return
+	pos = state['positives'][n_samples-1]
+	d1 = state['pos_d1'][n_samples-1]
+	d2 = state['pos_d2'][n_samples-1]
+	d3 = (d2 - state['pos_d2'][n_samples-3])/2
+	state['days_to_double'] = dict()
+	dd = state['days_to_double']
+	dd['pos'] = pos/d1
+	if d2 > 0:
+		dd['d1'] = d1/d2
+	else:
+		dd['d1'] = -1
+	delta = d1*d1 + 4 * d2 * pos
+	if delta >= 0:
+		dd['model'] = (-d1 + math.sqrt(delta))/(2*d2)
+	else:
+		dd['model'] = -1
+
+
 def analyze(states) :
 	for state in states:
 		state_positives(state)
 		state_tested(state)
+		trends(state)
 	# remove any states with no cases
 	n_states = len(states)
 	ctr = 0

@@ -9,6 +9,8 @@ Usage
 
 To use the code, you need a machine that has python3. All the modules identify /usr/bin/python3 as the interpreter. If your environment is different, either edit this or call your python3 with a program as the argument. All .py and .json files must be put into a single directory. You will also need to have png subdirectory to store any generated PNG images.
 
+Code requires requests, matplotlib and reportlib packages.
+
 By default, programs produce multipage PDF files. If PNG is selected as the output type (-o png), one file will be produced for each page.
 
 US has 56 states and territories and at this moment 55 (all except American Samoa) have reported covid cases. File states.json has name, id and population for each. You should not have to regenerate it, but if you do, get_states.py will download the list of states from the COVID project. This list will be missing population numbers for some territories, edit the file and put them in by hand. Most current numbers are 2019, but some of the manually entered numbers are 2018.
@@ -24,26 +26,19 @@ The following programs are available. All support -h to see usage:
 
 mksummary.py :
 
-Makes summary tables with latest per state data, sorted
-worst-to-best. It provides total number of cases, new number of daily cases,
-the rate of change of the new number of daily cases and the acceleration of
-that rate.
+Makes summary tables with latest per state data, sorted worst-to-best. It provides total number of cases, new number of daily cases, the rate of change of the new number of daily cases and the acceleration of that rate.
 
-Prints the list of the states at risk (meaningfully rising rate of new
-cases) and d2 summary analysis to stdout.
+Makes the tables of state trends. Each state has a line with total number of cases per million, daily new cases per million, change rate of the new cases, number of days to double the number of cases (linear, using just fixed latest number of new cases), number of days to double the daily number of new cases and number of days to double the nuber of cases using model (just quadratic taking into account change rate of new cases). This is always in trends.pdf, regardless of any -o value. Use pdftopng to get PNG images.
+
+Prints the list of the states at risk (meaningfully rising rate of new cases) and d2 summary analysis to stdout.
 
 analyze_pos.py :
 
 Makes two plots for each state. One plots the raw and smoothed number of total reported cases. The other reports the rate of change and the acceleration.
 
-By default, these two are combined on the same page, though this can be
-changed by specifying pos,d1d2 to -a option.
+By default, these two are combined on the same page, though this can be changed by specifying pos,d1d2 to -a option.
 
-In PDF, output is combined in a single multipage file, pos_combined.pdf (or
-two files, positive.pdf and pos_d1d2.pdf if separate output is chosen). (I
-use d1, d2 and d3 since these are first, second and third derivatives of the
-number of cases). For PNG output, each plot page (one or two per state) is
-stored in a separate file in the png directory.
+In PDF, output is combined in a single multipage file, pos_combined.pdf (or two files, positive.pdf and pos_d1d2.pdf if separate output is chosen). (I use d1, d2 and d3 since these are first, second and third derivatives of the number of cases). For PNG output, each plot page (one or two per state) is stored in a separate file in the png directory.
 
 Finally, a plot of d3 for all states over the last 15 days is produced to give a sense of current trends. Lines sloping up on the right are indication the infection is intensifying in these states.
 
