@@ -14,6 +14,7 @@ import datetime
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from operator import itemgetter, attrgetter
 
 def load_json_file( name, lst ):
 	ff = open( name )
@@ -43,6 +44,7 @@ def parse_latest():
 
 	for state in states:
 		state['data'] = []
+		state['actions'] = []
 
 	today = datetime.date.today()
 	last_day = None

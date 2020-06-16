@@ -20,13 +20,34 @@ import matplotlib
 import matplotlib.pyplot as plt
 import operator
 from matplotlib.backends.backend_pdf import PdfPages
-from parse_data import parse_latest
+from parse_data import parse_latest, load_json_file
 
 # smoothing parameters - number of days
 support = 7	# positives and tests
 support_d1 = 3	# d1 - number of new cases
 support_d2 = 3	# d2 - rate of change in new cases
 support_d3 = 3	# d3 - acceleration of the rate of change in new cases
+
+active_period = 21 # we assume infections in last this many days are
+		   # still active
+
+
+def parse_actions( states, actions ):
+	statectr = 0
+	state_len = len(states)
+	for action in actions:
+		while not action['state'] == states[statectr]['state']:
+			statectr += 1
+			if statectr == state_len:
+				break
+		if statectr == state_len:
+			print( 'ERROR: no state ', action['state'] )
+			return
+		basedate =((states[statectr]['data'])[states[statectr]['n_samples']-1])['date']
+		currdate = action['date']
+		states[statectr]['actions'].append( [ (datetime.date.fromisoformat(\
+                	currdate[0:4]+'-'+currdate[4:6]+'-'+currdate[6:8])- \
+			basedate).days, action['action'] ] )
 
 def smooth_series( smoothed, support, vals, days, n_samples):
 	for i in range(support):
@@ -72,7 +93,9 @@ def state_positives(state):
 		state['have_covid'] = True
 		state['n_samples'] = n_samples
 		state['smoothed_pos'] = [0]*(n_samples)
+		state['active'] = [0]*(n_samples)
 		smoothed = state['smoothed_pos']
+		active = state['active']
 		# first and second derivative
 		state['pos_d1'] = [0]*n_samples
 		state['pos_d2'] = [0]*n_samples
@@ -83,6 +106,12 @@ def state_positives(state):
 		wrk = [0]*n_samples
 		# smoothed positives
 		smooth_series( smoothed, support, vals, days, n_samples)
+		# actives, smoothed from positives
+		for i in range(active_period) :
+			wrk[i] = vals[i]
+		for i in range(active_period,n_samples):
+			wrk[i] = vals[i] - vals[i-active_period]
+		smooth_series( active, support, wrk, days, n_samples)
 		# first derivative of smoothed positives
 		for i in range(1,n_samples):
 			wrk[i] = (smoothed[i]-smoothed[i-1])/(days[i]-days[i-1])
@@ -185,6 +214,17 @@ def analyze(states) :
 			states.pop(ctr)
 		else:
 			ctr +=1
+
+	# uncomment to parse actions
+	# sample actions.json format
+	#{"name": "Alaska", "state": "AK", "date": "20200328", "action": "close"}
+	#{"name": "Alaska", "state": "AK", "date": "20200424", "action": "open"}
+
+	#actions = list()
+	#ff = load_json_file('actions.json', actions)
+	#actions.sort(key = lambda i: i['state'])
+	#parse_actions( states, actions )
+
 	# build various global arrays and values
 	summary = dict()
 	summary['active_states'] = n_states
@@ -216,6 +256,26 @@ def analyze(states) :
 			state['pos_d3'][state['n_samples']-1]
 	summary['pos_d3'] = \
 		dict( sorted(wrkdict.items(), key=operator.itemgetter(1)))
+	# max values
+	max_d1 = 0
+	max_d1_date = None
+	max_d1_state = None
+	for state in states:
+		max = 0
+		max_d = None
+		for day in range( state['n_samples'] ):
+			if state['pos_d1'][day] > max:
+				max = state['pos_d1'][day] 
+				max_d = day
+		if max > max_d1:
+			max_d1 = max
+			max_d1_state = state['name']
+			max_d1_date = state['basedate'] + \
+					datetime.timedelta( max_d )
+	summary['max_d1'] = max_d1
+	summary['max_d1_date'] = max_d1_date
+	summary['max_d1_state'] = max_d1_state
+				
 	return(summary)
 
 		

@@ -26,9 +26,13 @@ The following programs are available. All support -h to see usage:
 
 mksummary.py :
 
-Makes summary tables with latest per state data, sorted worst-to-best. It provides total number of cases, new number of daily cases, the rate of change of the new number of daily cases and the acceleration of that rate.
+Makes summary tables with latest per state data, sorted worst-to-best. It
+provides total number of cases, estimated number of active cases, new number of daily cases, the rate of change of the new number of daily cases and the acceleration of that rate.
 
-Makes the tables of state trends. Each state has a line with total number of cases per million, daily new cases per million, change rate of the new cases, number of days to double the number of cases (linear, using just fixed latest number of new cases), number of days to double the daily number of new cases and number of days to double the nuber of cases using model (just quadratic taking into account change rate of new cases). This is always in trends.pdf, regardless of any -o value. Use pdftopng to get PNG images.
+Estimated number of active cases is a 7 day running average of the sum of the last 21 days of new cases. 
+
+Makes the tables of state trends. Each state has a line with total number of
+cases per million, estimated number of active cases per million, daily new cases per million, change rate of the new cases, number of days to double the number of cases (linear, using just fixed latest number of new cases), number of days to double the daily number of new cases and number of days to double the nuber of cases using model (just quadratic taking into account change rate of new cases). This is always in trends.pdf, regardless of any -o value. Use pdftopng to get PNG images.
 
 Prints the list of the states at risk (meaningfully rising rate of new cases) and d2 summary analysis to stdout.
 
@@ -51,5 +55,7 @@ All the other modules are called by these two programs.
 There is an extraordinary amount of noise in the data, especially between the days of the week. Weekends see much less testing and thus much fewer cases, only to have a spike on Monday and Tuesday. Almost all analysis is done on the smoothed data - 7 day running average serves as a lowpass filter. In particular, smoothed data is used to generate the derivatives, which are again smoothed a bit.
 
 Note that this smoothing makes the reported state of affairs lag a bit after the raw data.
+
+Current code can also process opening and closing actions for each state (if any). The close and open actions are represented as dashed vertical lines in the positives and new cases graphs. Events are given in actions.json file, which is currently only partially populated. The parsing code in process.py has been commented out, since the actions did not seem to provide any useful insight. The data on actions is diverse and hard to gather and the delay in case tracking due to smoothing makes it harder to correlate with the real time government actions. 
 
 I hope you will find these utilities useful.

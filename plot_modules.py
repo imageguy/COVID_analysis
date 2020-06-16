@@ -39,6 +39,8 @@ def plot_positives(state,n_days,outspec):
 			label='raw')
 	line, = ax.plot( state['days'][start:], state['smoothed_pos'][start:], \
 			label='7 day running average')
+	line, = ax.plot( state['days'][start:], state['active'][start:], \
+			label='active cases')
 	ax.legend()
 	plt.title(state['name'])
 	plt.figtext( 0.1, 0.05, 'first case on ' + \
@@ -114,6 +116,15 @@ def plot_combined(state,n_days,outspec):
 			label='raw')
 	line, = ax.plot( state['days'][start:], state['smoothed_pos'][start:], \
 			label='7 day running average', color=color)
+	line, = ax.plot( state['days'][start:], state['active'][start:], \
+			label='active cases')
+	# uncomment parsing in parse_latest to get the data
+	for act in state['actions']:
+		if act[1] == 'close' :
+			ax.axvline(act[0], color='red', dashes=[10,10])
+		else:
+			ax.axvline(act[0], color='green', dashes=[10,10])
+		
 	ax.legend()
 	plt.title('cumulative number of cases')
 	plt.figtext( 0.1, 0.45, 'first case on ' + \
@@ -141,6 +152,11 @@ def plot_combined(state,n_days,outspec):
 			label='new daily cases change', color=color)
 	line3, =ax2.plot( state['days'][start:], [0]*(n_samples-start), color='black')
 	line3.set_dashes([10,10])
+	for act in state['actions']:
+		if act[1] == 'close' :
+			ax2.axvline(act[0], color='red', dashes=[10,10])
+		else:
+			ax2.axvline(act[0], color='green', dashes=[10,10])
 	plt.title('daily new cases and trend')
 	outtype = str(type(outspec))
 	if outtype == pdftype :

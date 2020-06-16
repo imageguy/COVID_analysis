@@ -34,6 +34,9 @@ from reportlab.lib.units import inch
 def sort_pos(state):
 	return state['positives'][state['n_samples']-1]
 
+def sort_active(state):
+	return state['active'][state['n_samples']-1]
+
 def sort_d1(state):
 	return state['pos_d1'][state['n_samples']-1]
 
@@ -65,6 +68,7 @@ def single_trend_table( sorted, styles, elements, title, footnote ) :
 	data = [
 		[' ', 'State', \
 		'positives\nper million', \
+		'active cases\nper million',
 		'daily new\nper million',
 		'daily new\nrate of change',\
 		'days to double\npos (linear)',\
@@ -75,6 +79,7 @@ def single_trend_table( sorted, styles, elements, title, footnote ) :
 	for state in sorted:
 		n_samples = state['n_samples']
 		pos = state['positives'][n_samples-1]
+		active = state['active'][n_samples-1]
 		d1 = state['pos_d1'][n_samples-1]
 		d2 = state['pos_d2'][n_samples-1]
 		double_d = state['days_to_double']
@@ -92,6 +97,7 @@ def single_trend_table( sorted, styles, elements, title, footnote ) :
 		tabline = [ str(ctr), \
 			state['name'], \
 			str(int(pos)), \
+			str(int(active)), \
 			"{:,.2f}".format(d1),\
 			"{:,.2f}".format(d2), \
 			str(int(double_d['pos'])), \
@@ -123,7 +129,7 @@ def make_trend_report(states, fname ):
 	for state in states:
 		sorted.append(state)
 
-	mysize = (612,1200)
+	mysize = (700,1200)
 
 	doc = SimpleDocTemplate(fname, pagesize=mysize)
 	doc.title = 'State trends report'
@@ -137,6 +143,10 @@ def make_trend_report(states, fname ):
 	sorted.sort(key=sort_pos,reverse=True)
 	single_trend_table( sorted, styles, elements, \
 			'State trends by total positives', NAnote)
+
+	sorted.sort(key=sort_active,reverse=True)
+	single_trend_table( sorted, styles, elements, \
+			'State trends by estimated active cases', NAnote)
 
 	sorted.sort(key=sort_d1,reverse=True)
 	single_trend_table( sorted, styles, elements, \
@@ -275,12 +285,13 @@ for state in states:
 	else:
 		n_d2_dec +=1
 
+print( 'max number of new cases: ', int(summary['max_d1']), ' on ', \
+	summary['max_d1_date'], ' in ', summary['max_d1_state'] )
 print( 'd2 min = ',"{:,.2f}".format(d2_min),' in ',d2_min_state)
 print( 'd2 max = ',"{:,.2f}".format(d2_max),' in ',d2_max_state)
 print( n_d2_pos, ' states with increasing rate' )
 print( n_d2_neg, ' states with decreasing rate' )
 print( n_d2_inc, ' states with accelerating rate' )
 print( n_d2_dec, ' states with deccelerating rate' )
-
 
 sys.exit(0)
