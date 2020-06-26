@@ -148,13 +148,6 @@ def state_tested(state):
 		else:
 			negatives[day] /=(state['pop']/1000000)
 		tested[day] = positives[day] + negatives[day]
-#	if state['name'] == 'Georgia' :
-#		print( 'negatives' )
-#		print( negatives )
-#		print( 'positives' )
-#		print( positives )
-#		print( 'tested' )
-#		print( tested )
 	for day in range(n_samples-1,1,-1):
 		tested[day] -= tested[day-1]
 	# smooth tested
@@ -178,16 +171,21 @@ def state_tested(state):
 # compute trend data
 def trends(state):
 	n_samples = state['n_samples']
+	#print( state['name'])
 	if n_samples == 0:
 		return
 	pos = state['positives'][n_samples-1]
+	act = state['active'][n_samples-1]
 	d1 = state['pos_d1'][n_samples-1]
 	d2 = state['pos_d2'][n_samples-1]
 	d3 = (d2 - state['pos_d2'][n_samples-3])/2
 	state['days_to_double'] = dict()
 	dd = state['days_to_double']
-	dd['pos'] = pos/d1
-	if d2 > 0:
+	if d1 > 0.09 :
+		dd['pos'] = pos/d1
+	else:
+		dd['pos'] = -1
+	if d2 > 0.009:
 		dd['d1'] = d1/d2
 	else:
 		dd['d1'] = -1
@@ -196,6 +194,33 @@ def trends(state):
 		dd['model'] = (-d1 + math.sqrt(delta))/(2*d2)
 	else:
 		dd['model'] = -1
+	dday = 0
+	curr_act = act
+	wrknew = state['pos_d1'][n_samples-active_period-1:n_samples]
+	while curr_act < 2 * act:
+		dday += 1
+		curr_act -= wrknew[0]
+		for i in range(active_period-1,1) :
+			wrknew[i-1] = wrknew[i]
+		delta = d1 + d2 * dday 
+		if delta < 0:
+			dday = -1
+			break
+		wrknew[active_period-1] = wrknew[active_period-2] + delta
+		curr_act += wrknew[active_period-1]
+	dd['act'] = dday
+	state['days_doubled'] = dict()
+	dd = state['days_doubled']
+	i = 2
+	while i < n_samples and pos < 2*state['positives'][n_samples-i]:
+		i += 1
+	dd['pos'] = i
+	i = 2
+	while i < n_samples and act < 2*state['active'][n_samples-i]:
+		i += 1
+	dd['act'] = i
+
+
 
 
 def analyze(states) :

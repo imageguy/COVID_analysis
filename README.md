@@ -26,13 +26,11 @@ The following programs are available. All support -h to see usage:
 
 mksummary.py :
 
-Makes summary tables with latest per state data, sorted worst-to-best. It
-provides total number of cases, estimated number of active cases, new number of daily cases, the rate of change of the new number of daily cases and the acceleration of that rate.
+Makes summary tables with latest per state data, sorted worst-to-best. It provides total number of cases, estimated number of active cases, new number of daily cases, the rate of change of the new number of daily cases and the acceleration of that rate. It also predicts the number of days until total, active and new double and gives how many days it took for the totals and actives to double until the last day of data.
 
 Estimated number of active cases is a 7 day running average of the sum of the last 21 days of new cases. 
 
-Makes the tables of state trends. Each state has a line with total number of
-cases per million, estimated number of active cases per million, daily new cases per million, change rate of the new cases, number of days to double the number of cases (linear, using just fixed latest number of new cases), number of days to double the daily number of new cases and number of days to double the nuber of cases using model (just quadratic taking into account change rate of new cases). This is always in trends.pdf, regardless of any -o value. Use pdftopng to get PNG images.
+Makes the tables of state trends. Each state has a line with total number of cases per million, estimated number of active cases per million, daily new cases per million, change rate of the new cases, number of days to double the number of cases, number of days to double the daily number of new cases and number of days to double the number of active cases. It uses a model tha is just a quadratic taking into account change rate of new cases. Finally each line lists the number of days it took for the total positives and actives to double to the latest value. This is always in trends.pdf, regardless of any -o value. Use pdftopng to get PNG images.
 
 Prints the list of the states at risk (meaningfully rising rate of new cases) and d2 summary analysis to stdout.
 

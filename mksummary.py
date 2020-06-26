@@ -44,7 +44,11 @@ def sort_d2(state):
 	return state['pos_d2'][state['n_samples']-1]
 
 def sort_dpos(state):
-	return state['days_to_double']['pos']
+	val = state['days_to_double']['pos']
+	if val == -1:
+		return 99
+	else:
+		return val
 
 def sort_dd1(state):
 	val = state['days_to_double']['d1']
@@ -60,20 +64,45 @@ def sort_dmodel(state):
 	else:
 		return val
 
+def sort_amodel(state):
+	val = state['days_to_double']['act']
+	if val == -1:
+		return 99
+	else:
+		return val
+
+def sort_ddpos(state):
+	return state['days_doubled']['pos']
+
+def sort_ddact(state):
+	return state['days_doubled']['act']
+
 def single_trend_table( sorted, styles, elements, title, footnote ) :
 	ptext = '<strong>%s</strong>' % title
 	pp = Paragraph(title, styles['Title'])
 	elements.append(pp)
 	elements.append(Spacer(1, 10))
 	data = [
-		[' ', 'State', \
-		'positives\nper million', \
-		'active cases\nper million',
-		'daily new\nper million',
-		'daily new\nrate of change',\
-		'days to double\npos (linear)',\
-		'days to double\n new',\
-		'days to double\npos (model)'],
+		['', 'State', \
+		'positives', \
+		'active cases',
+		'daily new',
+		'daily new',\
+		'days to double',\
+		'',
+		'',
+		'days doubled',
+		''],
+		['', '', \
+		'per million', \
+		'per million',
+		'per million',
+		'rate of change',\
+		'pos',\
+		'new',\
+		'act',
+		'pos',
+		'act'],
 	]
 	ctr = 1
 	for state in sorted:
@@ -88,7 +117,13 @@ def single_trend_table( sorted, styles, elements, title, footnote ) :
 			dd1str = 'N/A'
 		else:
 			dd1str = str(dd1)
-		dmd = int(double_d['model'])
+		dmp = int(double_d['model'])
+		if dmp == -1:
+			dmpstr = 'N/A'
+		else:
+			dmpstr = str(dmp)
+		#dmd = int(double_d['model'])
+		dmd = int(double_d['act'])
 		if dmd == -1:
 			dmdstr = 'N/A'
 		else:
@@ -100,20 +135,26 @@ def single_trend_table( sorted, styles, elements, title, footnote ) :
 			str(int(active)), \
 			"{:,.2f}".format(d1),\
 			"{:,.2f}".format(d2), \
-			str(int(double_d['pos'])), \
+			dmpstr, \
 			dd1str, \
-			dmdstr \
+			dmdstr,
+			str(state['days_doubled']['pos']),\
+			str(state['days_doubled']['act'])\
 		]
 		ctr += 1
 		data.append(tabline)
 	t=Table(data)
 	t.setStyle(TableStyle([('ALIGN',(1,1),(-2,-2),'RIGHT'),
-	('TEXTCOLOR',(1,1),(-1,-1),colors.red),
+	('TEXTCOLOR',(1,2),(-1,-1),colors.red),
 	('VALIGN',(0,0),(0,-1),'TOP'),
 	('TEXTCOLOR',(0,0),(1,-1),colors.blue),
+	('SPAN',(6,0),(8,0)),
+	('SPAN',(9,0),(-1,0)),
 	('ALIGN',(0,0),(-1,-1),'CENTER'),
 	('VALIGN',(0,-1),(-1,-1),'MIDDLE'),
-	('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
+	('INNERGRID', (0,1), (-1,-1), 0.25, colors.black),
+	('LINEBEFORE', (0,0), (-1,1), 0.25, colors.black),
+	('LINEABOVE', (6,1), (-1,1), 0.25, colors.black),
 	('BOX', (0,0), (-1,-1), 0.25, colors.black),
 	]))
 	elements.append(t)
@@ -129,10 +170,10 @@ def make_trend_report(states, fname ):
 	for state in states:
 		sorted.append(state)
 
-	mysize = (700,1200)
+	mysize = (700,1250)
 
 	doc = SimpleDocTemplate(fname, pagesize=mysize)
-	doc.title = 'State trends report'
+	doc.title = 'State trends report ' + str(datetime.date.today())
 	doc.topMargin = 36
 
 	elements = []
@@ -167,7 +208,12 @@ def make_trend_report(states, fname ):
 
 	sorted.sort(key=sort_dmodel)
 	single_trend_table( sorted, styles, elements, \
-			'State trends by days to double positives (model)',\
+			'State trends by days last doubling of total positives',\
+			NAnote)
+
+	sorted.sort(key=sort_ddact)
+	single_trend_table( sorted, styles, elements, \
+			'State trends by days for last doubling of active cases',\
 			NAnote)
 
 	# write the document to disk
@@ -202,11 +248,11 @@ states = parse_latest()
 # generate the numbers
 summary = process.analyze(states)
 
+# old summary tables, last page is d3
 
-# positives
 with PdfPages('summary.pdf') as pdf:
 
-
+	# positives
 	if args.o == 'pdf':
 		outspec = pdf
 	else:
@@ -217,8 +263,7 @@ with PdfPages('summary.pdf') as pdf:
 		'State', '# cases', outspec)
 
 
-# new cases
-#with PdfPages('summ_d1.pdf') as pdf:
+	# new cases
 	if args.o == 'pdf':
 		outspec = pdf
 	else:
@@ -228,8 +273,7 @@ with PdfPages('summary.pdf') as pdf:
 		'From smoothed data', \
 		'State', '# new daily cases', outspec)
 
-# rate increase
-#with PdfPages('summ_d2.pdf') as pdf:
+	# rate increase
 	if args.o == 'pdf':
 		outspec = pdf
 	else:
@@ -239,8 +283,7 @@ with PdfPages('summary.pdf') as pdf:
 		'From smoothed data', \
 		'State', '# new daily cases change', outspec)
 
-# rate increase acceleration
-#with PdfPages('summ_d3.pdf') as pdf:
+	# rate increase acceleration
 	if args.o == 'pdf':
 		outspec = pdf
 	else:
