@@ -31,6 +31,9 @@ def parse_day(raw):
 	parsed['negative'] = raw['negative']
 	parsed['recovered'] = raw['recovered']
 	parsed['death'] = raw['death']
+	parsed['hospitalizedCurrently'] = raw['hospitalizedCurrently']
+	parsed['inIcuCurrently'] = raw['inIcuCurrently']
+	parsed['onVentilatorCurrently'] = raw['onVentilatorCurrently']
 	#parsed[''] = raw['']
 	#parsed[''] = raw['']
 	return( parsed )

@@ -32,6 +32,8 @@ Estimated number of active cases is a 7 day running average of the sum of the la
 
 Makes the tables of state trends. Each state has a line with total number of cases per million, estimated number of active cases per million, daily new cases per million, change rate of the new cases, number of days to double the number of cases, number of days to double the daily number of new cases and number of days to double the number of active cases. It uses a model tha is just a quadratic taking into account change rate of new cases. Finally each line lists the number of days it took for the total positives and actives to double to the latest value. This is always in trends.pdf, regardless of any -o value. Use pdftopng to get PNG images.
 
+Makes the mortality tables, along similar lines to trends, listing deaths per million and mortality rates per reported infected, per reported infected 14 days ago (it takes a while for the cases to become serious) and per population. Total positives per million and active cases per million are added for context.
+
 Prints the list of the states at risk (meaningfully rising rate of new cases) and d2 summary analysis to stdout.
 
 analyze_pos.py :
@@ -48,12 +50,24 @@ analyze_tst.py:
 
 Makes a plot of the number of daily tests, combined with the percentage of positive tests. It builds either a single PDF file, tests.pdf, or, for PNG, one file per state in png directory. Test data is even noisier than number of cases data, so plots are 7 day moving averages.
 
-All the other modules are called by these two programs.
+analyze_sev.py:
+
+Makes charts of "severe" cases, namely hospitalizations, ICU admissions, ventilator usage and mortality. Makes two plots per state, one on daily hospital/ICU/ventilator, together with cumulative mortality and daily active cases for scale. The other is mortality rate vs. daily number of deaths per million.
+
+Except for deaths, other data are sparsely reported and sometimes obviously wrong.
+
+All the other modules are called by these programs.
 
 There is an extraordinary amount of noise in the data, especially between the days of the week. Weekends see much less testing and thus much fewer cases, only to have a spike on Monday and Tuesday. Almost all analysis is done on the smoothed data - 7 day running average serves as a lowpass filter. In particular, smoothed data is used to generate the derivatives, which are again smoothed a bit.
 
 Note that this smoothing makes the reported state of affairs lag a bit after the raw data.
 
 Current code can also process opening and closing actions for each state (if any). The close and open actions are represented as dashed vertical lines in the positives and new cases graphs. Events are given in actions.json file, which is currently only partially populated. The parsing code in process.py has been commented out, since the actions did not seem to provide any useful insight. The data on actions is diverse and hard to gather and the delay in case tracking due to smoothing makes it harder to correlate with the real time government actions. 
+
+I tried to compute infection numbers normalized by the number of tests, but
+was unsuccessful. There is so much noise in the data that the normalized
+numbers are garbage. Smoothing didn't really help, one would have to go into
+data fitting, which I didn't have time for. The code is still in process.py,
+just not called.
 
 I hope you will find these utilities useful.

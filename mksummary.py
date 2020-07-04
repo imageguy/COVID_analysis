@@ -43,6 +43,9 @@ def sort_d1(state):
 def sort_d2(state):
 	return state['pos_d2'][state['n_samples']-1]
 
+def sort_d3(state):
+	return state['pos_d3'][state['n_samples']-1]
+
 def sort_dpos(state):
 	val = state['days_to_double']['pos']
 	if val == -1:
@@ -77,6 +80,18 @@ def sort_ddpos(state):
 def sort_ddact(state):
 	return state['days_doubled']['act']
 
+def sort_death(state):
+	return  state['death'][state['n_samples']-1]
+
+def sort_mort_pos(state):
+	return state['death'][state['n_samples']-1]/state['positives'][state['n_samples']-1]
+
+def sort_mort_pos14(state):
+	return state['death'][state['n_samples']-1]/state['positives'][state['n_samples']-15]
+
+def sort_mort_pop(state):
+	return  state['death'][state['n_samples']-1]/10000
+
 def single_trend_table( sorted, styles, elements, title, footnote ) :
 	ptext = '<strong>%s</strong>' % title
 	pp = Paragraph(title, styles['Title'])
@@ -88,6 +103,7 @@ def single_trend_table( sorted, styles, elements, title, footnote ) :
 		'active cases',
 		'daily new',
 		'daily new',\
+		'daily new',\
 		'days to double',\
 		'',
 		'',
@@ -98,6 +114,7 @@ def single_trend_table( sorted, styles, elements, title, footnote ) :
 		'per million',
 		'per million',
 		'rate of change',\
+		'accel',\
 		'pos',\
 		'new',\
 		'act',
@@ -111,6 +128,7 @@ def single_trend_table( sorted, styles, elements, title, footnote ) :
 		active = state['active'][n_samples-1]
 		d1 = state['pos_d1'][n_samples-1]
 		d2 = state['pos_d2'][n_samples-1]
+		d3 = state['pos_d3'][n_samples-1]
 		double_d = state['days_to_double']
 		dd1 = int(double_d['d1'])
 		if dd1 == -1:
@@ -135,6 +153,7 @@ def single_trend_table( sorted, styles, elements, title, footnote ) :
 			str(int(active)), \
 			"{:,.2f}".format(d1),\
 			"{:,.2f}".format(d2), \
+			"{:,.2f}".format(d3), \
 			dmpstr, \
 			dd1str, \
 			dmdstr,
@@ -148,8 +167,8 @@ def single_trend_table( sorted, styles, elements, title, footnote ) :
 	('TEXTCOLOR',(1,2),(-1,-1),colors.red),
 	('VALIGN',(0,0),(0,-1),'TOP'),
 	('TEXTCOLOR',(0,0),(1,-1),colors.blue),
-	('SPAN',(6,0),(8,0)),
-	('SPAN',(9,0),(-1,0)),
+	('SPAN',(7,0),(9,0)),
+	('SPAN',(10,0),(-1,0)),
 	('ALIGN',(0,0),(-1,-1),'CENTER'),
 	('VALIGN',(0,-1),(-1,-1),'MIDDLE'),
 	('INNERGRID', (0,1), (-1,-1), 0.25, colors.black),
@@ -183,38 +202,144 @@ def make_trend_report(states, fname ):
 
 	sorted.sort(key=sort_pos,reverse=True)
 	single_trend_table( sorted, styles, elements, \
-			'State trends by total positives', NAnote)
+		'State trends by total positives', NAnote)
 
 	sorted.sort(key=sort_active,reverse=True)
 	single_trend_table( sorted, styles, elements, \
-			'State trends by estimated active cases', NAnote)
+		'State trends by estimated active cases', NAnote)
 
 	sorted.sort(key=sort_d1,reverse=True)
 	single_trend_table( sorted, styles, elements, \
-			'State trends by new cases', NAnote)
+		'State trends by new cases', NAnote)
 
 	sorted.sort(key=sort_d2,reverse=True)
 	single_trend_table( sorted, styles, elements, \
-			'State trends by by new case growth', NAnote)
+		'State trends by by new case growth', NAnote)
+
+	sorted.sort(key=sort_d3,reverse=True)
+	single_trend_table( sorted, styles, elements, \
+		'State trends by by new case growth acceleration', NAnote)
 
 	sorted.sort(key=sort_dd1)
 	single_trend_table( sorted, styles, elements, \
-			'State trends by days to double new cases', NAnote)
-
-	sorted.sort(key=sort_dpos)
-	single_trend_table( sorted, styles, elements, \
-		'State trends by days to double total positives (linear)', \
-		NAnote)
+		'State trends by days to double new cases', NAnote)
 
 	sorted.sort(key=sort_dmodel)
 	single_trend_table( sorted, styles, elements, \
-			'State trends by days last doubling of total positives',\
+		'State trends by days to double total positives', \
+		NAnote)
+
+	sorted.sort(key=sort_amodel)
+	single_trend_table( sorted, styles, elements, \
+		'State trends by days to double active cases', \
+		NAnote)
+
+	sorted.sort(key=sort_ddpos)
+	single_trend_table( sorted, styles, elements, \
+		'State trends by days last doubling of total positives',\
 			NAnote)
 
 	sorted.sort(key=sort_ddact)
 	single_trend_table( sorted, styles, elements, \
-			'State trends by days for last doubling of active cases',\
+		'State trends by days for last doubling of active cases',\
 			NAnote)
+
+	# write the document to disk
+	doc.build(elements)
+
+def single_mortality_table( sorted, styles, elements, title, footnote ) :
+	ptext = '<strong>%s</strong>' % title
+	pp = Paragraph(title, styles['Title'])
+	elements.append(pp)
+	elements.append(Spacer(1, 10))
+	data = [ \
+		['', 'State', \
+		'positives', \
+		'active cases', \
+		'deaths', \
+		'mortality rate %',\
+		'', \
+		''], \
+		['', '', \
+		'per million', \
+		'per million', \
+		'per million', \
+		'infected', \
+		'infected-14', \
+		'population' ] \
+	]
+	ctr = 1
+	for state in sorted:
+		n_samples = state['n_samples']
+		pos = state['positives'][n_samples-1]
+		active = state['active'][n_samples-1]
+		death = state['death'][n_samples-1]
+		pop = state['pop']
+			
+		tabline = [ str(ctr), \
+			state['name'], \
+			str(int(pos)), \
+			str(int(active)), \
+			str(int(death)), \
+			"{:,.2f}".format(100*death/state['positives'][n_samples-1]),\
+			"{:,.2f}".format(100*death/state['positives'][n_samples-15]),\
+			"{:,.3f}".format(death/10000),\
+		]
+		ctr += 1
+		data.append(tabline)
+	t=Table(data)
+	t.setStyle(TableStyle([('ALIGN',(1,1),(-2,-2),'RIGHT'),
+	('TEXTCOLOR',(1,2),(-1,-1),colors.red),
+	('VALIGN',(0,0),(0,-1),'TOP'),
+	('TEXTCOLOR',(0,0),(1,-1),colors.blue),
+	('SPAN',(5,0),(-1,0)),
+	('ALIGN',(0,0),(-1,-1),'CENTER'),
+	('VALIGN',(0,-1),(-1,-1),'MIDDLE'),
+	('INNERGRID', (0,1), (-1,-1), 0.25, colors.black),
+	('LINEBEFORE', (0,0), (-1,1), 0.25, colors.black),
+	('LINEABOVE', (5,1), (-1,1), 0.25, colors.black),
+	('BOX', (0,0), (-1,-1), 0.25, colors.black),
+	]))
+	elements.append(t)
+	if not footnote == '':
+		elements.append(Spacer(1, 10))
+		elements.append(Paragraph(footnote,styles['Normal']))
+		
+	elements.append(PageBreak())
+
+def make_mortality_report(states, fname ):
+
+	sorted = list()  # used to sort on different criteria
+	for state in states:
+		sorted.append(state)
+
+	mysize = (700,1250)
+
+	doc = SimpleDocTemplate(fname, pagesize=mysize)
+	doc.title = 'State mortality report ' + str(datetime.date.today())
+	doc.topMargin = 36
+
+	elements = []
+
+	styles=getSampleStyleSheet()
+	NAnote = ''
+
+	sorted.sort(key=sort_death,reverse=True)
+	single_mortality_table( sorted, styles, elements, \
+			'State mortality by total deaths', NAnote)
+
+	sorted.sort(key=sort_mort_pos,reverse=True)
+	single_mortality_table( sorted, styles, elements, \
+			'State mortality by infected mortality rate', NAnote)
+
+	sorted.sort(key=sort_mort_pos14,reverse=True)
+	single_mortality_table( sorted, styles, elements, \
+			'State mortality by infected mortality rate, 14 day delay', NAnote)
+
+	sorted.sort(key=sort_mort_pop,reverse=True)
+	single_mortality_table( sorted, styles, elements, \
+			'State mortality by population mortality rate', NAnote)
+
 
 	# write the document to disk
 	doc.build(elements)
@@ -248,53 +373,11 @@ states = parse_latest()
 # generate the numbers
 summary = process.analyze(states)
 
-# old summary tables, last page is d3
-
-with PdfPages('summary.pdf') as pdf:
-
-	# positives
-	if args.o == 'pdf':
-		outspec = pdf
-	else:
-		outspec = 'png/summ_pos.png'
-	plot_modules.output_table(summary['positives'],\
-		'Cumulative number of cases per million, most to least',\
-		'Raw (unsmoothed) data', \
-		'State', '# cases', outspec)
-
-
-	# new cases
-	if args.o == 'pdf':
-		outspec = pdf
-	else:
-		outspec = 'png/summ_d1.png'
-	plot_modules.output_table(summary['pos_d1'],\
-		'Daily new number of cases per million, most to least',\
-		'From smoothed data', \
-		'State', '# new daily cases', outspec)
-
-	# rate increase
-	if args.o == 'pdf':
-		outspec = pdf
-	else:
-		outspec = 'png/summ_d2.png'
-	plot_modules.output_table(summary['pos_d2'],\
-		'Change rate of new cases per million, most to least',\
-		'From smoothed data', \
-		'State', '# new daily cases change', outspec)
-
-	# rate increase acceleration
-	if args.o == 'pdf':
-		outspec = pdf
-	else:
-		outspec = 'png/summ_d3.png'
-	plot_modules.output_table(summary['pos_d3'],\
-		'Acceleration of change rate of new cases per million, most to least',\
-		'From smoothed data', \
-		'State', 'change rate acceleration', outspec)
-
 # trend table for all states, sorted on each column
 make_trend_report( states, 'trends.pdf' )
+
+# mortality table for all states, sorted on each column
+make_mortality_report( states, 'mortality.pdf' )
 
 # state trend analysis
 n_d2_pos = 0
@@ -330,6 +413,8 @@ for state in states:
 
 print( 'max number of new cases: ', int(summary['max_d1']), ' on ', \
 	summary['max_d1_date'], ' in ', summary['max_d1_state'] )
+print( 'max tests per million: ', int(summary['max_tpm']), ' on ', \
+	summary['max_tpm_date'], ' in ', summary['max_tpm_state'] )
 print( 'd2 min = ',"{:,.2f}".format(d2_min),' in ',d2_min_state)
 print( 'd2 max = ',"{:,.2f}".format(d2_max),' in ',d2_max_state)
 print( n_d2_pos, ' states with increasing rate' )
