@@ -81,16 +81,19 @@ def sort_ddact(state):
 	return state['days_doubled']['act']
 
 def sort_death(state):
-	return  state['death'][state['n_samples']-1]
+	return  state['eff_death']
+
+def sort_death7(state):
+	return  state['death7'][state['n_samples']-1]
 
 def sort_mort_pos(state):
-	return state['death'][state['n_samples']-1]/state['positives'][state['n_samples']-1]
+	return state['eff_death']/state['eff_positives']
 
 def sort_mort_pos14(state):
-	return state['death'][state['n_samples']-1]/state['positives'][state['n_samples']-15]
+	return state['eff_death']/state['eff_positives14']
 
 def sort_mort_pop(state):
-	return  state['death'][state['n_samples']-1]/10000
+	return  state['eff_death']/10000
 
 def single_trend_table( sorted, styles, elements, title, footnote ) :
 	ptext = '<strong>%s</strong>' % title
@@ -191,8 +194,10 @@ def make_trend_report(states, fname ):
 
 	mysize = (700,1250)
 
+	datestr = str(datetime.date.today()-datetime.timedelta(days=1))
+
 	doc = SimpleDocTemplate(fname, pagesize=mysize)
-	doc.title = 'State trends report ' + str(datetime.date.today())
+	doc.title = 'State trends report ' + datestr
 	doc.topMargin = 36
 
 	elements = []
@@ -257,23 +262,26 @@ def single_mortality_table( sorted, styles, elements, title, footnote ) :
 		'positives', \
 		'active cases', \
 		'deaths', \
+		'daily deaths/mil', \
 		'mortality rate %',\
-		'', \
 		''], \
 		['', '', \
 		'per million', \
 		'per million', \
 		'per million', \
+		'avg over last week', \
 		'infected', \
-		'infected-14', \
-		'population' ] \
+		'infected-14' \
+		 ] \
 	]
 	ctr = 1
 	for state in sorted:
 		n_samples = state['n_samples']
-		pos = state['positives'][n_samples-1]
+		pos = state['eff_positives']
+		pos14 = state['eff_positives14']
 		active = state['active'][n_samples-1]
-		death = state['death'][n_samples-1]
+		death = state['eff_death']
+		death7 = state['death7'][n_samples-1]
 		pop = state['pop']
 			
 		tabline = [ str(ctr), \
@@ -281,9 +289,9 @@ def single_mortality_table( sorted, styles, elements, title, footnote ) :
 			str(int(pos)), \
 			str(int(active)), \
 			str(int(death)), \
-			"{:,.2f}".format(100*death/state['positives'][n_samples-1]),\
-			"{:,.2f}".format(100*death/state['positives'][n_samples-15]),\
-			"{:,.3f}".format(death/10000),\
+			"{:,.2f}".format(death7),\
+			"{:,.2f}".format(100*death/pos),\
+			"{:,.2f}".format(100*death/pos14)\
 		]
 		ctr += 1
 		data.append(tabline)
@@ -292,12 +300,12 @@ def single_mortality_table( sorted, styles, elements, title, footnote ) :
 	('TEXTCOLOR',(1,2),(-1,-1),colors.red),
 	('VALIGN',(0,0),(0,-1),'TOP'),
 	('TEXTCOLOR',(0,0),(1,-1),colors.blue),
-	('SPAN',(5,0),(-1,0)),
+	('SPAN',(6,0),(-1,0)),
 	('ALIGN',(0,0),(-1,-1),'CENTER'),
 	('VALIGN',(0,-1),(-1,-1),'MIDDLE'),
 	('INNERGRID', (0,1), (-1,-1), 0.25, colors.black),
 	('LINEBEFORE', (0,0), (-1,1), 0.25, colors.black),
-	('LINEABOVE', (5,1), (-1,1), 0.25, colors.black),
+	('LINEABOVE', (6,1), (-1,1), 0.25, colors.black),
 	('BOX', (0,0), (-1,-1), 0.25, colors.black),
 	]))
 	elements.append(t)
@@ -312,10 +320,20 @@ def make_mortality_report(states, fname ):
 	sorted = list()  # used to sort on different criteria
 	for state in states:
 		sorted.append(state)
+		state['eff_death'] = state['death'][state['n_samples']-1]
+		state['eff_positives'] = \
+			state['positives'][state['n_samples']-1]
+		state['eff_positives14'] = \
+			state['eff_positives'] - \
+		(state['positives'][state['n_samples']-1] -\
+			state['positives'][state['n_samples']-15])
 
 	mysize = (700,1250)
 
+	datestr = str(datetime.date.today()-datetime.timedelta(days=1))
+
 	doc = SimpleDocTemplate(fname, pagesize=mysize)
+	doc.title = 'State trends report ' + datestr
 	doc.title = 'State mortality report ' + str(datetime.date.today())
 	doc.topMargin = 36
 
@@ -328,6 +346,10 @@ def make_mortality_report(states, fname ):
 	single_mortality_table( sorted, styles, elements, \
 			'State mortality by total deaths', NAnote)
 
+	sorted.sort(key=sort_death7,reverse=True)
+	single_mortality_table( sorted, styles, elements, \
+			'State daily mortality, by last 7 day average ', NAnote)
+
 	sorted.sort(key=sort_mort_pos,reverse=True)
 	single_mortality_table( sorted, styles, elements, \
 			'State mortality by infected mortality rate', NAnote)
@@ -336,9 +358,30 @@ def make_mortality_report(states, fname ):
 	single_mortality_table( sorted, styles, elements, \
 			'State mortality by infected mortality rate, 14 day delay', NAnote)
 
-	sorted.sort(key=sort_mort_pop,reverse=True)
+
+	n_days=60
+	for state in states:
+		state['eff_death'] = state['death'][state['n_samples']-1] -\
+			state['death'][state['n_samples']-(n_days+1)]
+		state['eff_positives'] = \
+		state['positives'][state['n_samples']-1] -\
+			state['positives'][state['n_samples']-(n_days+1)]
+		state['eff_positives14'] = \
+			state['eff_positives'] - \
+		(state['positives'][state['n_samples']-1] -\
+			state['positives'][state['n_samples']-15])
+
+	sorted.sort(key=sort_death,reverse=True)
+	single_mortality_table(  sorted, styles, elements, \
+			str(n_days) + ' day state mortality by deaths', NAnote)
+
+	sorted.sort(key=sort_mort_pos,reverse=True)
 	single_mortality_table( sorted, styles, elements, \
-			'State mortality by population mortality rate', NAnote)
+			str(n_days) + ' day state mortality by infected mortality rate', NAnote)
+
+	sorted.sort(key=sort_mort_pos14,reverse=True)
+	single_mortality_table( sorted, styles, elements, \
+			str(n_days) + ' day state mortality by infected mortality rate, 14 day delay', NAnote)
 
 
 	# write the document to disk
@@ -373,11 +416,13 @@ states = parse_latest()
 # generate the numbers
 summary = process.analyze(states)
 
+datestr = str(datetime.date.today()-datetime.timedelta(days=1))
+
 # trend table for all states, sorted on each column
-make_trend_report( states, 'trends.pdf' )
+make_trend_report( states, 'trends-' + datestr + '.pdf' )
 
 # mortality table for all states, sorted on each column
-make_mortality_report( states, 'mortality.pdf' )
+make_mortality_report( states, 'mortality-' + datestr + '.pdf' )
 
 # state trend analysis
 n_d2_pos = 0
@@ -388,6 +433,8 @@ d2_max = 0
 d2_max_state = ''
 d2_min = 0 
 d2_min_state = ''
+death_max = 0
+death_max_state = ''
 
 for state in states:
 	n_samples = state['n_samples']
@@ -410,6 +457,10 @@ for state in states:
 		n_d2_inc += 1
 	else:
 		n_d2_dec +=1
+	dd1 = state['death7'][n_samples-1]
+	if dd1 > death_max:
+		death_max = dd1
+		death_max_state = state['name']
 
 print( 'max number of new cases: ', int(summary['max_d1']), ' on ', \
 	summary['max_d1_date'], ' in ', summary['max_d1_state'] )
@@ -417,6 +468,8 @@ print( 'max tests per million: ', int(summary['max_tpm']), ' on ', \
 	summary['max_tpm_date'], ' in ', summary['max_tpm_state'] )
 print( 'd2 min = ',"{:,.2f}".format(d2_min),' in ',d2_min_state)
 print( 'd2 max = ',"{:,.2f}".format(d2_max),' in ',d2_max_state)
+print( 'max death average over last 7 days = ',"{:,.2f}".format(death_max), \
+		' in ',death_max_state)
 print( n_d2_pos, ' states with increasing rate' )
 print( n_d2_neg, ' states with decreasing rate' )
 print( n_d2_inc, ' states with accelerating rate' )

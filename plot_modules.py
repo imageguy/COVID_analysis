@@ -280,9 +280,12 @@ def plot_severe(state,n_days,outspec):
 			label='cumulative mortality rate', color=color)
 	line3, = ax4.plot( state['days'][start:], state['death_d1'][start:], \
 			linestyle=':', label='daily deaths', color=color)
-	matplotlib.pyplot.legend( (line1, line2, line3),\
+	line4, = ax4.plot( state['days'][start:], state['death7'][start:], \
+			label='smoothed daily deaths', color="blue")
+	matplotlib.pyplot.legend( (line1, line2, line3, line4),\
 		('cumulative cases', 'cumulative mortality rate', \
-		'daily deaths per million') )
+		'raw daily deaths per million', \
+		'smoothed daily deaths per million') )
 	plt.title('mortality rate')
 	outtype = str(type(outspec))
 	if outtype == pdftype :

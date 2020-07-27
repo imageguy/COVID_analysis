@@ -201,6 +201,7 @@ def state_severe(state):
 	state['vent'] = [0]*n_samples
 	state['death'] = [0]*n_samples
 	state['death_d1'] = [0]*n_samples
+	state['death7'] = [0]*n_samples
 	hosp = state['hosp']
 	icu = state['icu']
 	vent = state['vent']
@@ -221,6 +222,9 @@ def state_severe(state):
 	wrk = state['death_d1']
 	for i in range(1,n_samples):
 			wrk[i] = (death[i]-death[i-1])/(days[i]-days[i-1])
+	wrk = state['death7']
+	for i in range(6,n_samples):
+		wrk[i] = (death[i]-death[i-6])/7
 
 # compute trend data
 def trends(state):
