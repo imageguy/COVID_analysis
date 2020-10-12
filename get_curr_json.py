@@ -19,4 +19,12 @@ for dd in r.json():
 	ff.write('\n')
 ff.close()
 
+r = requests.get('https://covidtracking.com/api/v1/us/daily.json' )
+
+ff = open('./latest_us.json', 'w')
+for dd in r.json():
+	ff.write(json.dumps(dd))
+	ff.write('\n')
+ff.close()
+
 sys.exit( 0 )

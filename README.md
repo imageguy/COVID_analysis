@@ -15,6 +15,8 @@ By default, programs produce multipage PDF files. If PNG is selected as the outp
 
 US has 56 states and territories and at this moment 55 (all except American Samoa) have reported covid cases. File states.json has name, id and population for each. You should not have to regenerate it, but if you do, get_states.py will download the list of states from the COVID project. This list will be missing population numbers for some territories, edit the file and put them in by hand. Most current numbers are 2019, but some of the manually entered numbers are 2018.
 
+We treat the whole US as a state for the output purposes, but the data is in us.json, not states.json
+
 Start by running get_curr_json.py, which will get the current cumulative
 data file from The COVID Tracking Project. Processing ignores any today's data in the file, since it's likely to be partial. This will produce latest.json file.
 

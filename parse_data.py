@@ -41,6 +41,7 @@ def parse_day(raw):
 def parse_latest():
 	states = list()
 	ff = load_json_file('states.json', states)
+	ff = load_json_file('us.json', states)
 
 	latest = list()
 	ff = load_json_file('latest.json', latest)
@@ -52,7 +53,7 @@ def parse_latest():
 	today = datetime.date.today()
 	last_day = None
 	curr_state = 0
-	n_states = len(states)
+	n_states = len(states)-1
 	for rec in latest:
 		data = parse_day(rec)
 		if not data['date'] == last_day:
@@ -66,6 +67,16 @@ def parse_latest():
 			if curr_state == n_states:
 				print( "ERR: missing state ", rec['state'])
 				sys.exit( 1 )
+			((states[curr_state])['data']).append(data)
+	
+	latest_us = list()
+	ff = load_json_file('latest_us.json', latest_us)
+	last_day = None
+	curr_state = len(states)-1
+	for rec in latest_us:
+		data = parse_day(rec)
+		# ignore today's data
+		if not data['date'] == today:
 			((states[curr_state])['data']).append(data)
 	return(states)
 

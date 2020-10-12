@@ -89,8 +89,8 @@ def sort_death7(state):
 def sort_mort_pos(state):
 	return state['eff_death']/state['eff_positives']
 
-def sort_mort_pos14(state):
-	return state['eff_death']/state['eff_positives14']
+def sort_mort_newpos(state):
+	return state['death7'][state['n_samples']-1]/state['pos_d1'][state['n_samples']-1]
 
 def sort_mort_pop(state):
 	return  state['eff_death']/10000
@@ -271,7 +271,7 @@ def single_mortality_table( sorted, styles, elements, title, footnote ) :
 		'per million', \
 		'avg over last week', \
 		'infected', \
-		'infected-14' \
+		'newly infected' \
 		 ] \
 	]
 	ctr = 1
@@ -282,6 +282,7 @@ def single_mortality_table( sorted, styles, elements, title, footnote ) :
 		active = state['active'][n_samples-1]
 		death = state['eff_death']
 		death7 = state['death7'][n_samples-1]
+		d1 = state['pos_d1'][n_samples-1]
 		pop = state['pop']
 			
 		tabline = [ str(ctr), \
@@ -291,7 +292,7 @@ def single_mortality_table( sorted, styles, elements, title, footnote ) :
 			str(int(death)), \
 			"{:,.2f}".format(death7),\
 			"{:,.2f}".format(100*death/pos),\
-			"{:,.2f}".format(100*death/pos14)\
+			"{:,.2f}".format(100*death7/d1)\
 		]
 		ctr += 1
 		data.append(tabline)
@@ -334,7 +335,7 @@ def make_mortality_report(states, fname ):
 
 	doc = SimpleDocTemplate(fname, pagesize=mysize)
 	doc.title = 'State trends report ' + datestr
-	doc.title = 'State mortality report ' + str(datetime.date.today())
+	doc.title = 'State mortality report ' + datestr
 	doc.topMargin = 36
 
 	elements = []
@@ -354,9 +355,9 @@ def make_mortality_report(states, fname ):
 	single_mortality_table( sorted, styles, elements, \
 			'State mortality by infected mortality rate', NAnote)
 
-	sorted.sort(key=sort_mort_pos14,reverse=True)
+	sorted.sort(key=sort_mort_newpos,reverse=True)
 	single_mortality_table( sorted, styles, elements, \
-			'State mortality by infected mortality rate, 14 day delay', NAnote)
+			'State mortality by newly infected mortality rate', NAnote)
 
 
 	n_days=60
@@ -379,9 +380,9 @@ def make_mortality_report(states, fname ):
 	single_mortality_table( sorted, styles, elements, \
 			str(n_days) + ' day state mortality by infected mortality rate', NAnote)
 
-	sorted.sort(key=sort_mort_pos14,reverse=True)
+	sorted.sort(key=sort_mort_newpos,reverse=True)
 	single_mortality_table( sorted, styles, elements, \
-			str(n_days) + ' day state mortality by infected mortality rate, 14 day delay', NAnote)
+			str(n_days) + ' day state mortality by newly infected mortality rate', NAnote)
 
 
 	# write the document to disk
