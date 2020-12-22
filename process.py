@@ -24,7 +24,7 @@ from parse_data import parse_latest, load_json_file
 
 # smoothing parameters - number of days
 support = 7	# positives
-support_tst = 21	# tests
+support_tst = 7	# tests
 support_d1 = 3	# d1 - number of new cases
 support_d2 = 3	# d2 - rate of change in new cases
 support_d3 = 3	# d3 - acceleration of the rate of change in new cases
@@ -55,7 +55,7 @@ def smooth_series( smoothed, support, vals, days, n_samples):
 		smoothed[i] = vals[i]
 	low = 0
 	for curr in range( support, n_samples ):
-		while days[curr] - days[low] > 7:
+		while days[curr] - days[low] > support:
 			low += 1
 		sum = 0
 		n = 0
@@ -143,6 +143,7 @@ def state_tested(state):
 	tested = state['tested']
 	tot_tested = state['tot_tested']
 	positives = state['positives']
+	smoothed_pos = state['smoothed_pos']
 	negatives = state['negatives']
 	for day in range(0,n_samples):
 		negatives[day] = ((state['data'])[n_samples-day-1])['negative']
@@ -155,8 +156,8 @@ def state_tested(state):
 		tested[day] = tot_tested[day] - tot_tested[day-1]
 	# smooth tested
 	state['smoothed_tested'] = [0]*(n_samples)
-	smoothed = state['smoothed_tested']
-	smooth_series( smoothed, support_tst, tested, days, n_samples)
+	smoothed_tst = state['smoothed_tested']
+	smooth_series( smoothed_tst, support_tst, tested, days, n_samples)
 	# fraction positive
 	state['frac_positive'] = [0]*n_samples
 	frac = state['frac_positive']
@@ -166,10 +167,15 @@ def state_tested(state):
 				tested[day]
 		else:
 			frac[day] = 0
-	# smooth frac
+	# smooth frac - computed from smoothed positives and smoothed tested
 	state['smoothed_frac'] = [0]*(n_samples)
 	smoothed = state['smoothed_frac']
-	smooth_series( smoothed, support_tst, frac, days, n_samples)
+	for day in range(1,n_samples):
+		if smoothed_tst[day] > 0:
+			smoothed[day] = (smoothed_pos[day] - smoothed_pos[day-1])/\
+				smoothed_tst[day]
+		else:
+			smoothed[day] = 0
 
 def load_from_parsed(n_samples, pop, data, target, name):
 	have_val = False

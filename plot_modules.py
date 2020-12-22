@@ -22,7 +22,7 @@ pdftype= '<class \'matplotlib.backends.backend_pdf.PdfPages\'>'
 def offset( name ):
 	return( len(name)*0.005)
 
-def plot_positives(state,n_days,outspec):
+def plot_positives_save(state,n_days,outspec):
 	if not state['have_covid']:
 		return
 	n_samples = state['n_samples']
@@ -42,6 +42,43 @@ def plot_positives(state,n_days,outspec):
 	line, = ax.plot( state['days'][start:], state['active'][start:], \
 			label='active cases')
 	ax.legend()
+	plt.title(state['name'])
+	plt.figtext( 0.1, 0.05, 'first case on ' + \
+		str(state['basedate']) + ', ' + \
+		str((state['days'])[n_samples-1]+1) + ' days with cases, ' + \
+		str(int(state['positives'][n_samples-1])) + ' cumulative cases per million' )
+
+	outtype = str(type(outspec))
+	if outtype == pdftype :
+		outspec.savefig() # output spec is PDF back end
+	else:
+		# outspec is file for PNG output
+		plt.savefig(outspec, format='png')
+	plt.close()
+
+def plot_positives(state,n_days,outspec):
+	if not state['have_covid']:
+		return
+	n_samples = state['n_samples']
+	fig = plt.figure(figsize=(8,10))
+	ax = fig.add_subplot(1,1,1)
+	if n_days == -1:
+		start = 0
+		ax.set_xlabel( 'days since first case' )
+	else:
+		start = n_samples-n_days
+		ax.set_xlabel( 'last '+str(n_days) + ' days' )
+	ax.set_ylabel( 'cases per million' )
+	line, = ax.plot( state['days'][start:], state['positives'][start:],\
+			label='raw')
+	line, = ax.plot( state['days'][start:], state['smoothed_pos'][start:], \
+			label='7 day running average')
+	axd2 = ax.twinx()
+	color = 'tab:red'
+	axd2.set_ylabel( 'active cases', color=color )
+	axd2.tick_params(axis='y', labelcolor=color )
+	line2, = axd2.plot( state['days'][start:], state['active'][start:], \
+			label='active cases', color=color )
 	plt.title(state['name'])
 	plt.figtext( 0.1, 0.05, 'first case on ' + \
 		str(state['basedate']) + ', ' + \
@@ -121,8 +158,14 @@ def plot_combined(state,n_days,outspec):
 			label='raw')
 	line, = ax.plot( state['days'][start:], state['smoothed_pos'][start:], \
 			label='7 day running average', color=color)
-	line, = ax.plot( state['days'][start:], state['active'][start:], \
-			label='active cases', color='orange')
+#	line, = ax.plot( state['days'][start:], state['active'][start:], \
+#			label='active cases', color='orange')
+	axd2 = ax.twinx()
+	color = 'tab:orange'
+	axd2.set_ylabel( 'active cases', color=color )
+	axd2.tick_params(axis='y', labelcolor=color )
+	line2, = axd2.plot( state['days'][start:], state['active'][start:], \
+			label='active cases', color=color )
 #	line, = ax.plot( state['days'][normbase:], \
 #			state['norm_pos'][normstart:], \
 #			label='normalized total', linestyle=':', color=color)
@@ -273,6 +316,8 @@ def plot_severe(state,n_days,outspec):
 	val = [0]*n_samples
 	for i in range(n_samples):
 		if state['death'][i] == 0:
+			val[i] = 0
+		elif state['positives'][i] == 0:
 			val[i] = 0
 		else:
 			val[i] = 100*state['death'][i] / state['positives'][i]

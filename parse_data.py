@@ -34,7 +34,33 @@ def parse_day(raw):
 	parsed['hospitalizedCurrently'] = raw['hospitalizedCurrently']
 	parsed['inIcuCurrently'] = raw['inIcuCurrently']
 	parsed['onVentilatorCurrently'] = raw['onVentilatorCurrently']
+	if 'totalTestsAntibody' in raw.keys():
+		parsed['totalTestsAntibody'] = raw['totalTestsAntibody']
+	else :
+		parsed['totalTestsAntibody'] = 0
+	if 'positiveTestsAntibody' in raw.keys():
+		parsed['positiveTestsAntibody'] = raw['positiveTestsAntibody']
+	else :
+		parsed['positiveTestsAntibody'] = 0
+	if 'negativeTestsAntibody' in raw.keys():
+		parsed['negativeTestsAntibody'] = raw['negativeTestsAntibody']
+	else :
+		parsed['negativeTestsAntibody'] = 0
+	if 'totalTestsPeopleAntibody' in raw.keys():
+		parsed['totalTestsPeopleAntibody'] = raw['totalTestsPeopleAntibody']
+	else :
+		parsed['totalTestsPeopleAntibody'] = 0
+	if 'positiveTestsPeopleAntibody' in raw.keys():
+		parsed['positiveTestsPeopleAntibody'] = raw['positiveTestsPeopleAntibody']
+	else :
+		parsed['positiveTestsPeopleAntibody'] = 0
+	if 'negativeTestsPeopleAntibody' in raw.keys():
+		parsed['negativeTestsPeopleAntibody'] = raw['negativeTestsPeopleAntibody']
+	else :
+		parsed['negativeTestsPeopleAntibody'] = 0
 	#parsed[''] = raw['']
+	return( parsed )
+
 	#parsed[''] = raw['']
 	return( parsed )
 

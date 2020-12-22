@@ -425,6 +425,43 @@ make_trend_report( states, 'trends-' + datestr + '.pdf' )
 # mortality table for all states, sorted on each column
 make_mortality_report( states, 'mortality-' + datestr + '.pdf' )
 
+# antibody analysis
+sum_tot = 0
+sum_pos = 0
+n_have = 0
+sum_pop = 0
+sum_vpos = 0
+sum_vtot = 0
+for state in states :
+	n_samp = state['n_samples']
+	tta = state['data'][0]['totalTestsAntibody']
+	pta = state['data'][0]['positiveTestsAntibody']
+	nta = state['data'][0]['negativeTestsAntibody']
+	ttpa = state['data'][0]['totalTestsPeopleAntibody']
+	ptpa = state['data'][0]['positiveTestsPeopleAntibody']
+	ntpa = state['data'][0]['negativeTestsPeopleAntibody']
+	if tta != None and tta > 1000 and pta != None and pta > 0 :
+		pop = state['pop']
+		pos = state['positives'][n_samp-1] * pop / 1000000
+		tot = pos + state['negatives'][n_samp-1] * pop / 1000000
+		print( state['name'], ":", pop,\
+			'viral population: ', "{:,.2f}".format(100*pos/pop)+'%', \
+			'test:', "{:,.2f}".format(100*pos/tot)+'%', \
+			' antibody :', "{:,.2f}".format(100*pta/tta)+'%' )
+		n_have += 1
+		sum_tot += tta
+		sum_pos += pta
+		sum_vpos += pos
+		sum_vtot += tot
+		sum_pop += pop
+print( n_have, "states, total population:", sum_pop )
+print(  "viral:", sum_vpos, \
+	"tested:", "{:,.2f}".format(100*sum_vpos / sum_vtot)+'%', \
+	"population:", "{:,.2f}".format(100*sum_vpos / sum_pop )+'%' )
+print(  "antibody:", 
+	"{:,.2f}".format(100*sum_pos / sum_tot )+'%' )
+
+
 # state trend analysis
 n_d2_pos = 0
 n_d2_neg = 0
